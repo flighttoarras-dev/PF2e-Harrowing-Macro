@@ -85,17 +85,17 @@ const SUITS = {
 // Key by persistent Actor UUID. Unlisted targets use FALLBACK_PREF.
 // Used by "Party Member" and "Whole Party" modes. Strategy: "priority" or "spread".
 const TARGET_PREFS = {
-  "Actor.52lFol4jMbzUKJyV": {
+  "Actor.REPLACE_ME_1": {
     name: "Slot 1",
     strategy: "priority",
     preferenceList: [SUITS.hammers, SUITS.stars, SUITS.books, SUITS.keys, SUITS.shields, SUITS.crowns],
   },
-  "Actor.uGc8Mia9U6pyhSUi": {
+  "Actor.REPLACE_ME_2": {
     name: "Slot 2",
     strategy: "priority",
     preferenceList: [SUITS.books, SUITS.crowns, SUITS.stars, SUITS.hammers, SUITS.keys, SUITS.shields],
   },
-  "Actor.bgmfnjlGWyHDQEUa": {
+  "Actor.REPLACE_ME_3": {
     name: "Slot 3",
     strategy: "spread",
     preferenceList: [SUITS.stars, SUITS.keys, SUITS.shields, SUITS.hammers, SUITS.books, SUITS.crowns],
@@ -1097,3 +1097,4 @@ function getPartyActorUuids() {
   console.error(e);
   ui.notifications.error(`Harrowing macro error: ${e?.message ?? e}`);
 });
+
