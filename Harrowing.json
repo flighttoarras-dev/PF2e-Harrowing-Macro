@@ -85,7 +85,7 @@ const SUITS = {
 // Key by persistent Actor UUID. Unlisted targets use FALLBACK_PREF.
 // Used by "Party Member" and "Whole Party" modes. Strategy: "priority" or "spread".
 const TARGET_PREFS = {
-  "Actor.REPLACE_ME_1": {
+  "Actor.bM8Dvlu0DKXPEUFc": {
     name: "Slot 1",
     strategy: "priority",
     preferenceList: [SUITS.hammers, SUITS.stars, SUITS.books, SUITS.keys, SUITS.shields, SUITS.crowns],
@@ -208,8 +208,18 @@ const HARROW_CHECK_DC_ADJUST = 0;
 // Hide effect icons on tokens (effects still appear on the actor sheet).
 const HIDE_TOKEN_EFFECT_ICONS = true;
 
+// Optional: allow non-GM users to apply/clear effects via Advanced Macros (if installed/configured).
+// If false or module not available, the macro will only modify actors the user owns (or if run by a GM).
+const USE_ADVANCED_MACROS = false;
+
+// Safety: if false, and the user lacks permission on a target, we skip that target with a warning.
+const SKIP_IF_NO_PERMISSION = true;
+
 // Chat output option: show the unchosen suit when Reading the Signs draws two suits.
 const SHOW_OTHER_DRAW = false;
+
+// Safety: prevent players from modifying actors they don't own
+const ENFORCE_PLAYER_PERMISSIONS = true;
 
 // Visual mapping: suit -> tint color in chat card output.
 const SUIT_COLOR = {
@@ -328,6 +338,36 @@ function actorHasItemLike(actor, { slug, nameIncludes = [] }) {
       return false;
     }) ?? false
   );
+}
+
+/* Notifications */
+function warn(msg) { ui.notifications.warn(msg); }
+function error(msg) { ui.notifications.error(msg); }
+
+function canModifyActor(actor) {
+  if (game.user.isGM) return true;
+  try {
+    return actor?.testUserPermission?.(game.user, "OWNER") ?? false;
+  } catch {
+    return false;
+  }
+}
+
+function enforceOrSkipNoPermission(actor, actionLabel = "modify this actor") {
+  if (canModifyActor(actor)) return true;
+
+  const msg = `No permission to ${actionLabel} for ${actor?.name ?? "unknown actor"}.`;
+  if (SKIP_IF_NO_PERMISSION) {
+    warn(msg + " Skipping.");
+    return false;
+  }
+  throw new Error(msg);
+}
+
+function userCanModifyActor(actor) {
+  if (game.user.isGM) return true;
+  if (!actor) return false;
+  return actor.isOwner;
 }
 
 /** Detect relevant caster feats/items for Harrowing automation. */
@@ -880,9 +920,14 @@ function getPartyActorUuids() {
   if (!baseEffect) return error("Could not load Spell Effect: Harrowing from compendium.");
 
   for (const currentTarget of targetActors) {
+
     const pref = getTargetPreference(currentTarget);
     const draws = ritualRank;
     const targetActor = currentTarget;
+
+    const canEdit = enforceOrSkipNoPermission(targetActor, "apply Harrowing effects");
+      if (!canEdit) continue;
+    
     const cost = computeHarrowingCost(targetActor, features);
     totalCost += cost.gp;
     const alreadyChosen = new Set();
@@ -1004,6 +1049,8 @@ function getPartyActorUuids() {
       return data;
     });
 
+    if (!enforceOrSkipNoPermission(targetActor, "clear existing Harrowing effects")) continue;
+    
     if (clearExisting) {
       const toDelete = (targetActor.items ?? [])
         .filter(
@@ -1097,4 +1144,3 @@ function getPartyActorUuids() {
   console.error(e);
   ui.notifications.error(`Harrowing macro error: ${e?.message ?? e}`);
 });
-
